@@ -1,5 +1,3 @@
-//Please note some of the base code for input pins and rotation was found on the internet for a starting point.
-
 #define EN        8  
 
 //Direction pin
@@ -12,7 +10,6 @@
 #define Y_STP     3 
 #define Z_STP     4 
 
-//Square Wave output pin
 const int pwmPin = 0;    // Assign the pin we want to output on - alex code
 
 
@@ -21,8 +18,9 @@ const int pwmPin = 0;    // Assign the pin we want to output on - alex code
 int delayTime=300000; //Delay between each pause (uS)
 int stps=254;// Steps to move 200 might be 360 degrees
 
-//spins motors
+
 void step(boolean dir, byte dirPin, byte stepperPin, int steps)
+
 {
 
   digitalWrite(dirPin, dir);
@@ -43,7 +41,6 @@ void step(boolean dir, byte dirPin, byte stepperPin, int steps)
 
 }
 
-//sets up all the pins
 void setup(){
 
   pinMode(X_DIR, OUTPUT); pinMode(X_STP, OUTPUT);
@@ -56,18 +53,22 @@ void setup(){
 
   digitalWrite(EN, LOW);
 
-  pinMode(pwmPin, OUTPUT); 
+  pinMode(pwmPin, OUTPUT); // This needs to be set in your program at some point before you call pulse().
 
 }
-
-//the loop moves the positioner in its 16 by 16 grid and sends a square wave to signal the mirophone to trigger
+//delay(5000);
 void loop(){
+//  step(true, Y_DIR, Y_STP, 254);
+//  delay(100000);
+//  step(false, Y_DIR, Y_STP, 254);
+
+  //pulse(pwmPin, 1000); //1000ms pulse
   delay(5000);
-  for(int i =0; i<16; i++){
+  for(int i =0; i<14; i++){
     if(i>0){
       step(false, X_DIR, X_STP, stps); //X, Clockwise
     }
-    for(int y=0; y<16; y++){
+    for(int y=0; y<14; y++){
       if(y>0){
           step(false, Y_DIR, Y_STP, stps); //Y, Clockwise
         }  
@@ -81,10 +82,8 @@ void loop(){
   
   }
   exit(0);
-
 }
 
-//creates square wave
 void pulse(int pwmPin, int t){
   int outValue = 255;
   digitalWrite(pwmPin, HIGH);
