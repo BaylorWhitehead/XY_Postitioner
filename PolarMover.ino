@@ -94,20 +94,26 @@ void loop(){
         double yMov = getYDiff(y, yNew);    
 
         Serial.print("(");
-        Serial.print(xNew);
+        Serial.print(xNew*100);
         Serial.print(",");
-        Serial.print(yNew);
+        Serial.print(yNew*100);
         Serial.print(")");
 
         Serial.print("(");
-        Serial.print(xMov);
+        Serial.print(xMov*100);
         Serial.print(",");
-        Serial.print(yMov);
+        Serial.print(yMov*100);
         Serial.print(")");
-           
-        step(false, X_DIR, X_STP, 2272.72*xMov); //X, Clockwise
-        step(false, Y_DIR, Y_STP, 2272.72*yMov); //Y, Clockwise
-        delay(1500);
+
+        bool ifXMoveNegative = true;
+        bool ifYMoveNegative = true;
+        if(xMov > 0) ifXMoveNegative = false;
+        if(yMov > 0) ifYMoveNegative = false;
+        step(ifXMoveNegative, X_DIR, X_STP, 2272.72*abs(xMov)); //X, Clockwise
+        step(ifYMoveNegative, Y_DIR, Y_STP, 2272.72*abs(yMov)); //Y, Clockwise
+        delay(1500*max(xMov,yMov)*100);
+        x = xNew;
+        y = yNew;
         pulse(pwmPin, 100); //450ms pulse
       }
       Serial.println("");
