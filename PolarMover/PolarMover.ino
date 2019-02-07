@@ -1,13 +1,15 @@
+// SETUP
+
 #define EN        8  
 
 //Direction pin
-#define X_DIR     5 
-#define Y_DIR     6
+#define X_DIR     6
+#define Y_DIR     5
 #define Z_DIR     7
 
 //Step pin
-#define X_STP     2
-#define Y_STP     3 
+#define X_STP     3
+#define Y_STP     2
 #define Z_STP     4 
 
 
