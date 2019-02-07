@@ -12,9 +12,17 @@
 #define Y_STP     2
 #define Z_STP     4 
 
+// Physical Constants
+//3687 steps = .73m --> 50.50 steps / cm
+double xstepspercm = 50.50;
+double ystepspercm = 50.50;
+int xtracklength = 73; // 88cm total, from midpoint-midpoint at ends is 73cm. 
+int ytracklength = 73; 
 
-const int pwmPin = 0;    // Assign the pin we want to output on - alex code
+// Signal IO
+const int pwmPin = 0;    // Assign the pin we want to output a pulse on -- Alex's pulse wave output code
 
+// Physical track 
 const double WIDTH = 1;
 const double HEIGHT = 2;
 
@@ -22,44 +30,21 @@ const double HEIGHT = 2;
 int delayTime=300000; //Delay between each pause (uS)
 int stps=254;// Steps to move 200 might be 360 degrees
 
-//22.7272 steps per cm
-
-
+// ABSTRACT FUNCTION DECLARATIONS
+// Polar Coordinates
 static bool isValidPos(double r, double theta /*deg*/);
 static double getXPos(double r, double theta /*deg*/);
 static double getYPos(double r, double theta /*deg*/);
 static double getXDiff(double xOld, double xNew);
 static double getYDiff(double yOld, double yNew);
+// Cart Movement
+static void resetCart(char cart);
+static void centerCart(char cart);
+static void sweepPolarPoints();
+// Signal IO
+static void pulse(int pwmPin, int t);
 
 
-//3687 steps = .73m --> 50.50 steps / cm
-double stepspercm = 50.50;
-int tracklength = 73; // 88cm total, from midpoint-midpoint at ends is 73cm. 
-void step(boolean dir, byte dirPin, byte stepperPin, int steps)
-
-{
-
-  digitalWrite(dirPin, dir);
-
-  delay(100);
-
-  for (int i = 0; i < steps; i++) {
-    Serial.print("Step: ");
-    Serial.print(i);
-    Serial.print(" / " );
-    Serial.println(steps);
-    
-    digitalWrite(stepperPin, HIGH);
-
-    delayMicroseconds(delayTime); 
-
-    digitalWrite(stepperPin, LOW);
-
-    delayMicroseconds(delayTime); 
-
-  }
-
-}
 
 void setup(){
   Serial.begin(9600);
@@ -77,25 +62,53 @@ void setup(){
   digitalWrite(EN, LOW);
 
   pinMode(pwmPin, OUTPUT); // This needs to be set in your program at some point before you call pulse().
-
 }
-//delay(5000);
-int stepsmade = 0;
+
 void loop(){
-//  step(true, Y_DIR, Y_STP, 254);
-//  delay(100000);
-//  step(false, Y_DIR, Y_STP, 254);
-  //step(false, Y_DIR, Y_STP, 1000); //Y, Clockwise
-  Serial.print("HI");
-  for(int cms = 0; cms < tracklength/2; cms++) {
-    step(true, Y_DIR, Y_STP, stepspercm); //Y, Clockwise
-    Serial.print(cms);
+  // Cart must start from 0cm position
+  //resetCart('x');
+  //resetCart('y');
+  
+  // Move mic and speaker to center of track -- This is for calibrating step size.
+  //centerCard('x');
+  //centerCart('y');
+
+  // Sweep the arc of polar points for recording SPL
+  // Assumes we are starting from ____? [TBD]
+  sweepPolarPoints();
+  
+  exit(0);
+}
+
+void step(boolean dir, byte dirPin, byte stepperPin, int steps)
+{
+  digitalWrite(dirPin, dir);
+
+  delay(100);
+
+  for (int i = 0; i < steps; i++) {
+    Serial.print("Step: ");
+    Serial.print(i);
+    Serial.print(" / " );
+    Serial.print(steps);
+    Serial.print(" ... ");
+    
+    digitalWrite(stepperPin, HIGH);
+
+    //delayMicroseconds(delayTime); 
+
+    digitalWrite(stepperPin, LOW);
+
+    //delayMicroseconds(delayTime); 
+
   }
+  Serial.println("");
+}
+
+static void sweepPolarPoints() {
   double x = 0;
   double y = 0;
-
-
-  /*for(double i =0.05; i<=0.45; i+=0.1){
+  for(double i =0.05; i<=0.45; i+=0.1){
     for(double w = 0; w<=180; w+=5 ){
       Serial.print("Input: ");
       Serial.print(i);
@@ -135,11 +148,49 @@ void loop(){
       }
       Serial.println("");
     }
-  }*/
-  exit(0);
+  }
 }
 
-void pulse(int pwmPin, int t){
+static void resetCart(char cart){
+  // Choose which cart to control
+  byte DIR, STP;
+  double stepspercm;
+  if(cart == 'x') {
+    DIR = X_DIR;
+    STP = X_STP;
+    stepspercm = xstepspercm;
+  } else if(cart == 'y') {
+    DIR = Y_DIR;
+    STP = Y_STP;
+    stepspercm = ystepspercm;
+  }
+  // Reset the cart by continuously moving it backward
+  while(1) {
+      step(false, DIR, STP, stepspercm);
+  }
+}
+static void centerCart(char cart) { // Move the vertical-moving cart (speaker) to center
+  // Choose which cart to control
+  byte DIR, STP;
+  double stepspercm;
+  if(cart == 'x') {
+    DIR = X_DIR;
+    STP = X_STP;
+    stepspercm = xstepspercm;
+  } else if(cart == 'y') {
+    DIR = Y_DIR;
+    STP = Y_STP;
+    stepspercm = ystepspercm;
+  }
+  
+  // This assumes that the cart is at the 0cm position (edge of the track)
+  for(int cms = 0; cms < xtracklength/2; cms++) {
+    step(true, DIR, STP, stepspercm); // true = positive movement
+    Serial.print(cms);
+  }
+}
+
+static void pulse(int pwmPin, int t){
   int outValue = 255;
   digitalWrite(pwmPin, HIGH);
 
