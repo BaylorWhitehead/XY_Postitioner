@@ -173,14 +173,17 @@ static void centerCart(char cart) { // Move the vertical-moving cart (speaker) t
   // Choose which cart to control
   byte DIR, STP;
   double stepspercm;
+  int tracklength;
   if(cart == 'x') {
     DIR = X_DIR;
     STP = X_STP;
     stepspercm = xstepspercm;
+    tracklength = xtracklength;
   } else if(cart == 'y') {
     DIR = Y_DIR;
     STP = Y_STP;
     stepspercm = ystepspercm;
+    tracklength = ytracklength;
   }
   
   // This assumes that the cart is at the 0cm position (edge of the track)
@@ -188,6 +191,30 @@ static void centerCart(char cart) { // Move the vertical-moving cart (speaker) t
     step(true, DIR, STP, stepspercm); // true = positive movement
     Serial.print(cms);
   }
+}
+
+static void moveToEnd(char cart) {// Choose which cart to control
+  byte DIR, STP;
+  double stepspercm;
+  int tracklength;
+  if(cart == 'x') {
+    DIR = X_DIR;
+    STP = X_STP;
+    stepspercm = xstepspercm;
+    tracklength = xtracklength;
+  } else if(cart == 'y') {
+    DIR = Y_DIR;
+    STP = Y_STP;
+    stepspercm = ystepspercm;
+    tracklength = ytracklength;
+  }
+  
+  // This assumes that the cart is at the 0cm position (edge of the track)
+  for(int cms = 0; cms < tracklength; cms++) {
+    step(true, DIR, STP, stepspercm); // true = positive movement
+    Serial.print(cms);
+  }
+  
 }
 
 static void pulse(int pwmPin, int t){
