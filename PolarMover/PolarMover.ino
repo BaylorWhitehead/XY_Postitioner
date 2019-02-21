@@ -43,6 +43,7 @@ static void centerCart(char cart);
 static void sweepPolarPoints();
 // Signal IO
 static void pulse(int pwmPin, int t);
+//static void serialOut(Object[]);  <-- Would like to implement this function at some point to clean up code readability. Something like serialOut({"X Position: ", xPos, ", " , yPos}); ?
 
 
 
