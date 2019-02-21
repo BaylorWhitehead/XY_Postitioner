@@ -3,32 +3,32 @@
 #define EN        8  
 
 //Direction pin
-#define X_DIR     6
-#define Y_DIR     5
+#define X_DIR     5
+#define Y_DIR     6
 #define Z_DIR     7
 
 //Step pin
-#define X_STP     3
-#define Y_STP     2
+#define X_STP     2
+#define Y_STP     3
 #define Z_STP     4 
 
 // Physical Constants
-//3687 steps = .73m --> 50.50 steps / cm
-double xstepspercm = 50.50;
-double ystepspercm = 50.50;
-int xtracklength = 73; // 88cm total, from midpoint-midpoint at ends is 73cm. 
-int ytracklength = 73; 
+// These values need to be set by calibration.
+// Values are in centimeters
+int xstepspercm = 55;
+int ystepspercm = 55;
+double xtracklength = 73.5; //This is the total length, from -x to +x.
+double ytracklength = 54;
+
+// Track position of carts.
+double xPos = 0;
+double yPos = 0;
 
 // Signal IO
 const int pwmPin = 0;    // Assign the pin we want to output a pulse on -- Alex's pulse wave output code
 
-// Physical track 
-const double WIDTH = 1;
-const double HEIGHT = 2;
-
 //DRV8825
 int delayTime=300000; //Delay between each pause (uS)
-int stps=254;// Steps to move 200 might be 360 degrees
 
 // ABSTRACT FUNCTION DECLARATIONS
 // Polar Coordinates
@@ -66,16 +66,20 @@ void setup(){
 
 void loop(){
   // Cart must start from 0cm position
-  //resetCart('x');
-  //resetCart('y');
+  //moveToBeginning('x');
+  //moveToBeginning('y');
   
   // Move mic and speaker to center of track -- This is for calibrating step size.
   //centerCard('x');
   //centerCart('y');
 
+  //Move mic and speaker to end (calibrate)
+  moveToEnd('x');
+  moveToEnd('y');
+
   // Sweep the arc of polar points for recording SPL
   // Assumes we are starting from ____? [TBD]
-  sweepPolarPoints();
+  //sweepPolarPoints();
   
   exit(0);
 }
@@ -83,11 +87,12 @@ void loop(){
 void step(boolean dir, byte dirPin, byte stepperPin, int steps)
 {
   digitalWrite(dirPin, dir);
+  
 
   delay(100);
 
+  Serial.print("Step: ");
   for (int i = 0; i < steps; i++) {
-    Serial.print("Step: ");
     Serial.print(i);
     Serial.print(" / " );
     Serial.print(steps);
@@ -100,9 +105,30 @@ void step(boolean dir, byte dirPin, byte stepperPin, int steps)
     digitalWrite(stepperPin, LOW);
 
     //delayMicroseconds(delayTime); 
-
   }
   Serial.println("");
+
+  // Update position
+  // First, figure out which cart we are moving, and whether the boolean value corresponds to positive or negative movement
+  int dirPosNeg;
+  if(dirPin == X_DIR) { // implies we are moving the x cart
+    if(dir) dirPosNeg = 1;
+    else dirPosNeg = -1;
+  }
+  else if(dirPin == Y_DIR) { // implies we are moving the y cart
+    if(dir) dirPosNeg = -1;
+    else dirPosNeg = 1;
+  }
+  // Then add/sub this movement amount from the Pos
+  if(dirPin == X_DIR) xPos = xPos + (dirPosNeg * steps / xstepspercm);
+  else if(dirPin == Y_DIR) yPos = yPos + (dirPosNeg * steps / ystepspercm);
+  Serial.print("POS: (");
+  Serial.print(xPos);
+  Serial.print(",");
+  Serial.print(yPos);
+  Serial.println(")");
+  Serial.println("-----");
+  
 }
 
 static void sweepPolarPoints() {
@@ -151,67 +177,83 @@ static void sweepPolarPoints() {
   }
 }
 
-static void resetCart(char cart){
+static void moveToBeginning(char cart){
   // Choose which cart to control
   byte DIR, STP;
   double stepspercm;
+  boolean movementDir;
   if(cart == 'x') {
     DIR = X_DIR;
     STP = X_STP;
     stepspercm = xstepspercm;
+    movementDir = false;
   } else if(cart == 'y') {
     DIR = Y_DIR;
     STP = Y_STP;
     stepspercm = ystepspercm;
+    movementDir = true;
   }
+  /* 
+  This needs to be updated; no longer an infinite loop. Instead, should query current location of the art, and issue movement commands until the position is at zero.
+  Before this can be done, tracking must be implemented into the movement function (currently, step()).
+  */
   // Reset the cart by continuously moving it backward
   while(1) {
-      step(false, DIR, STP, stepspercm);
+      step(movementDir, DIR, STP, stepspercm);
   }
 }
+
 static void centerCart(char cart) { // Move the vertical-moving cart (speaker) to center
   // Choose which cart to control
   byte DIR, STP;
   double stepspercm;
   int tracklength;
+  boolean movementDir;
   if(cart == 'x') {
     DIR = X_DIR;
     STP = X_STP;
     stepspercm = xstepspercm;
     tracklength = xtracklength;
+    movementDir = true;
   } else if(cart == 'y') {
     DIR = Y_DIR;
     STP = Y_STP;
     stepspercm = ystepspercm;
     tracklength = ytracklength;
+    movementDir = false;
   }
   
   // This assumes that the cart is at the 0cm position (edge of the track)
-  for(int cms = 0; cms < xtracklength/2; cms++) {
-    step(true, DIR, STP, stepspercm); // true = positive movement
+  for(int cms = 0; cms < tracklength/2; cms++) {
+    step(movementDir, DIR, STP, stepspercm); // true = positive movement
+    Serial.print("CMS: ");
     Serial.print(cms);
+    Serial.print(" --> ");
   }
 }
 
-static void moveToEnd(char cart) {// Choose which cart to control
+static void moveToEnd(char cart) {// cart --> choose which cart to control ('x' or 'y')
+  // Assumes cart is at 0cm position (at edge of the track)
   byte DIR, STP;
   double stepspercm;
   int tracklength;
+  boolean movementDir;
   if(cart == 'x') {
     DIR = X_DIR;
     STP = X_STP;
     stepspercm = xstepspercm;
     tracklength = xtracklength;
+    movementDir = true;
   } else if(cart == 'y') {
     DIR = Y_DIR;
     STP = Y_STP;
     stepspercm = ystepspercm;
     tracklength = ytracklength;
+    movementDir = false;
   }
   
-  // This assumes that the cart is at the 0cm position (edge of the track)
-  for(int cms = 0; cms < tracklength; cms++) {
-    step(true, DIR, STP, stepspercm); // true = positive movement
+  for(int cms = 0; cms < floor(tracklength); cms++) {
+    step(movementDir, DIR, STP, stepspercm); // true = positive movement
     Serial.print(cms);
   }
   
@@ -231,7 +273,7 @@ static void pulse(int pwmPin, int t){
 static bool isValidPos(double r, double thetaDeg) { // Checks if the given (r,thetaDeg) accessible on the track?
   double xPos = getXPos(r,thetaDeg);
   double yPos = getYPos(r,thetaDeg);
-  if( xPos < 0 || xPos > WIDTH || yPos > HEIGHT )
+  if( xPos < 0 || xPos > xtracklength || yPos > ytracklength )
     return false;
   else
     return true;
@@ -239,15 +281,12 @@ static bool isValidPos(double r, double thetaDeg) { // Checks if the given (r,th
 
 static double getXPos(double r, double thetaDeg) { 
   double thetaRad = thetaDeg*PI/180;
-  return (WIDTH/2) + (r * cos(thetaRad)); // Shifts by WIDTH/2 because of translated origin
+  return (xtracklength/2) + (r * cos(thetaRad)); // Shifts by xtracklength/2 because of translated origin
 }
 static double getYPos(double r, double thetaDeg) {
   double thetaRad = thetaDeg*PI/180;
   return r * sin(thetaRad);
 }
-static double getXDiff(double xOld, double xNew) {
-  return xNew - xOld;
-}
-static double getYDiff(double yOld, double yNew) {
-  return yNew - yOld;
+static double getXDiff(double oldPos, double newPos) {
+  return newPos - oldPos;
 }
