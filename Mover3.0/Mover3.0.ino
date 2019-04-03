@@ -24,10 +24,10 @@ double xPos = xtracklength/2;
 double yPos = 0;
 
 // Signal IO
-const int pwmPin = 0;    // Assign the pin we want to output a pulse on -- Alex's pulse wave output code
+const int pwmPin = 7;    // Assign the pin we want to output a pulse on -- Alex's pulse wave output code
 
 //DRV8825
-int delayTime=300000; //Delay between each pause (uS)
+unsigned int delayTime=300000; //Delay between each pause (uS)
 
 // ABSTRACT FUNCTION DECLARATIONS
 // Polar Coordinates
@@ -66,7 +66,11 @@ void setup(){
 void loop(){
   
   //Move to start Positions
-  delay(10);
+  delay(10000);
+  //while(1){
+     //delay(1000);
+     //pulse(7, 100);
+  //}
   //Loop through Polar Pos
   sweepPolarPoints();
   //moveMoter(5, 'x');
@@ -135,7 +139,8 @@ static void sweepPolarPoints() {
         
         moveMoter(xMov, 'x');
         moveMoter(yMov, 'y');
-        delay(3000);
+        pulse(7, 100);
+        delay(5000);
       }
       Serial.println("");
     }
