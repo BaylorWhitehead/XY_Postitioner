@@ -1,23 +1,20 @@
 #ifndef PLATFORM
 #define PLATFORM
 
-
 class Platform{
   public:
-    void setup();
     void moveTo(double xNew, double yNew);
     void homeBoth();
     static Platform* getInstance();
-    static Platform* instance;
+
   private:
-    
+    static Platform* instance;
     double x;
     double y;
+    
     Platform();
-  
+    void setup();
+    void moveMotor(double distance, char axis);
 };
-
-
-
 
 #endif

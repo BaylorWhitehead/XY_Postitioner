@@ -5,22 +5,24 @@
 // SETUP
 #define EN        8  
 
-//Direction pin
+// Direction/Step pins
 #define X_DIR     5
 #define Y_DIR     6
 #define Z_DIR     7
-
-//Step pin
 #define X_STP     2
 #define Y_STP     3
 #define Z_STP     4
 
-//DRV8825
-unsigned int delayTime=300000; //Delay between each pause (uS)
+// DRV8825
+unsigned int delayTime = 300000; //Delay between each pause (uS)
 
 // Home Pins
 #define X_HOME_PIN 9
 #define Y_HOME_PIN 10
+
+// Track Size
+#define X_Track_Length 73.5 //cm
+#define Y_Track_Length 54 //cm
 
 Platform* Platform::instance;
 
@@ -32,12 +34,13 @@ Platform::Platform(){
 Platform* Platform::getInstance(){
     if(instance == 0){
         instance = new Platform();
+        instance->setup();
         instance->homeBoth();
     }
     return instance;
 }
 
-//spins motors
+// Steps Motors
 void step(bool dir, int dirPin, int stepperPin, int steps)
 {
   digitalWrite(dirPin, dir);
@@ -51,7 +54,7 @@ void step(bool dir, int dirPin, int stepperPin, int steps)
   }
 }
 
-void moveMoter(double distance, char axis){
+void Platform::moveMotor(double distance, char axis){
   bool dir = false;
   
   if(distance < 0){
@@ -68,29 +71,42 @@ void moveMoter(double distance, char axis){
   }
 }
 
+static bool isValidPos(double xPos, double yPos) { // Checks if the given (r,thetaDeg) accessible on the track?
+  if(abs(xPos) > X_Track_Length/2 || yPos > Y_Track_Length ){
+    Serial.print("bad pos");
+    return false;
+  }
+  else{  
+    Serial.print("GUCCI"); 
+    return true;
+  }
+}
+
 void Platform::moveTo(double xNew, double yNew){
-  moveMoter(xNew-x, 'x');
-  moveMoter(yNew-y, 'y');
-  x = xNew;
-  y = yNew;
+  if(isValidPos(xNew, yNew)){
+    moveMotor(xNew-x, 'x');
+    moveMotor(yNew-y, 'y');
+    x = xNew;
+    y = yNew;
+  }
 }
 
 void Platform::homeBoth(){
   int val = digitalRead(X_HOME_PIN);
   while(val == 0){
     val = digitalRead(X_HOME_PIN); 
-    moveMoter(-.1, 'x');    
+    moveMotor(-.4, 'x');    
   }
   val = digitalRead(Y_HOME_PIN);
   while(val == 0){
     val = digitalRead(Y_HOME_PIN); 
-    moveMoter(-.1, 'y');
+    moveMotor(-.4, 'y');
   }
-  
-  moveMoter(73.5/2, 'x');
-  x=73.5/2;
+
+  // Moving X to Orgin
+  moveMotor(73.5/2, 'x');
+  x=0;
   y=0;
-  
 }
 
 void Platform::setup(){
